@@ -9,6 +9,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
@@ -61,6 +62,12 @@ public class LobbyCommand {
             .filter(server1 -> validLobbiesRegex.stream().anyMatch(server1.getServerInfo().getName()::matches))
             .toList());
 
+        Player player = (Player) context.getSource();
+
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", player)
+            .addPlaceholder("optionalServerName", args.length > 1 ? args[1] : "");
+
         // Check if they are already in a lobby, if so remove the lobby from the list
         RegisteredServer currentServer = ((Player) context.getSource()).getCurrentServer().get().getServer();
         // player is in a lobby
@@ -68,7 +75,7 @@ public class LobbyCommand {
             validLobbies.remove(currentServer);
             // if validLobbies is empty, it means they are on the only lobby, tell them they are already in a lobby
             if (validLobbies.isEmpty()) {
-                context.getSource().sendMessage(Utils.formatString(langLobby.getAlready_in_lobby(), currentServer.getServerInfo().getName()));
+                context.getSource().sendMessage(Utils.formatString(builder.fill(langLobby.getAlready_in_lobby())));
                 return 1;
             }
         }
@@ -78,18 +85,18 @@ public class LobbyCommand {
             String server = args[1];
             Optional<RegisteredServer> serverArgument = LightningUtils.getProxy().getServer(server);
             if (serverArgument.isEmpty()) {
-                context.getSource().sendMessage(Utils.formatString(langLobby.getServer_does_not_exist(), server));
+                context.getSource().sendMessage(Utils.formatString(builder.fill(langLobby.getServer_does_not_exist())));
                 return 1;
             }
+            builder.addPlaceholder("server", serverArgument.get()); // server exists, add to placeholders
             // Server exists, check if it's a valid lobby
             if (validLobbies.stream().noneMatch(serverArgument.get()::equals)) {
-                context.getSource().sendMessage(Utils.formatString(langLobby.getIs_not_lobby(), server));
+                context.getSource().sendMessage(Utils.formatString(builder.fill(langLobby.getIs_not_lobby())));
                 return 1;
             }
             // Server is a valid lobby, send player to that server
-            Player player = (Player) context.getSource();
             player.createConnectionRequest(serverArgument.get()).fireAndForget();
-            player.sendMessage(Utils.formatString(langLobby.getSuccess(), server));
+            player.sendMessage(Utils.formatString(builder.fill(langLobby.getSuccess())));
         }
 
 //        # Order to send players in.
@@ -107,18 +114,18 @@ public class LobbyCommand {
         }
         if (order.equals("random")) {
             // send player to random lobby
-            Player player = (Player) context.getSource();
             RegisteredServer randomLobby = validLobbies.get(Utils.getRandomInt(0, validLobbies.size() - 1));
+            builder.addPlaceholder("server", randomLobby);
             player.createConnectionRequest(randomLobby).fireAndForget();
-            player.sendMessage(Utils.formatString(langLobby.getSuccess(), randomLobby.getServerInfo().getName()));
+            player.sendMessage(Utils.formatString(builder.fill(langLobby.getSuccess())));
         } else if (order.equals("priority")) {
             // send player to lobby with the least players
-            Player player = (Player) context.getSource();
             RegisteredServer leastPlayersLobby = validLobbies.stream()
                 .min(Comparator.comparingInt(server2 -> server2.getPlayersConnected().size()))
                 .orElseThrow();
+            builder.addPlaceholder("server", leastPlayersLobby);
             player.createConnectionRequest(leastPlayersLobby).fireAndForget();
-            player.sendMessage(Utils.formatString(langLobby.getSuccess(), leastPlayersLobby.getServerInfo().getName()));
+            player.sendMessage(Utils.formatString(builder.fill(langLobby.getSuccess())));
         }
         return 1; // indicates success
     }

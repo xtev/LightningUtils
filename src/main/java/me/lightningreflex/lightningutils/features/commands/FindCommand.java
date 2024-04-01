@@ -8,6 +8,7 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
@@ -44,21 +45,30 @@ public class FindCommand {
     private int execute(CommandContext<CommandSource> context) {
         String playerName = StringArgumentType.getString(context, langFind.getArguments().getPlayer());
         Optional<Player> optionalPlayer = LightningUtils.getProxy().getPlayer(playerName);
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource())
+            .addPlaceholder("optionalTargetName", playerName);
         if (optionalPlayer.isEmpty()) {
-            context.getSource().sendMessage(Utils.formatString(langFind.getPlayer_not_found(), playerName));
+//            context.getSource().sendMessage(Utils.formatString(langFind.getPlayer_not_found(), playerName));
+            context.getSource().sendMessage(Utils.formatString(builder.fill(langFind.getPlayer_not_found())));
             return 1;
         }
         Player argumentPlayer = optionalPlayer.get();
+        builder.addPlaceholder("target", argumentPlayer);
         if (argumentPlayer.getCurrentServer().isPresent()) {
-            context.getSource().sendMessage(Utils.formatString(langFind.getSuccess(), playerName, argumentPlayer.getCurrentServer().get().getServerInfo().getName()));
+//            context.getSource().sendMessage(Utils.formatString(langFind.getSuccess(), playerName, argumentPlayer.getCurrentServer().get().getServerInfo().getName()));
+            context.getSource().sendMessage(Utils.formatString(builder.fill(langFind.getSuccess())));
         } else {
-            context.getSource().sendMessage(Utils.formatString(langFind.getPlayer_not_found(), playerName));
+//            context.getSource().sendMessage(Utils.formatString(langFind.getPlayer_not_found(), playerName));
+            context.getSource().sendMessage(Utils.formatString(builder.fill(langFind.getPlayer_not_found())));
         }
         return 1; // indicates success
     }
 
     private int executeError(CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Utils.formatString(langFind.getArguments().getInvalid_syntax()));
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource());
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langFind.getArguments().getInvalid_syntax())));
         return 1; // indicates success
     }
 }

@@ -11,6 +11,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
@@ -63,89 +64,111 @@ public class SendCommand {
         String[] args = context.getInput().split(" ");
         Player player = (Player) context.getSource();
 
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", player);
+
         if (args[1].startsWith("+")) { // Send a server
+            builder.addPlaceholder("optional_from_name", args[1].substring(1));
             Optional<RegisteredServer> sourceServer = LightningUtils.getProxy().getServer(args[1].substring(1));
 
             if (sourceServer.isPresent()) { // Check if server exists
+                builder.addPlaceholder("from", sourceServer.get());
                 if (args[2].startsWith("+")) { // Send to server
+                    builder.addPlaceholder("optional_to_name", args[2].substring(1));
                     Optional<RegisteredServer> destServer = LightningUtils.getProxy().getServer(args[2].substring(1));
 
                     if (destServer.isPresent()) { // Check if server exists
                         // Server to server
-                        player.sendMessage(Utils.formatString(langSend.getSuccess_executor(), args[1], args[2]));
+                        builder.addPlaceholder("to", destServer.get());
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getSuccesses().getServer_to_server())));
                         for (Player p : sourceServer.get().getPlayersConnected()) {
                             p.createConnectionRequest(destServer.get()).fireAndForget();
-                            p.sendMessage(Utils.formatString(langSend.getWarning_player(), args[2], player.getUsername()));
+                            builder.addPlaceholder("receiver", p);
+                            p.sendMessage(Utils.formatString(builder.fill(langSend.getWarnings().getServer_to_server())));
                         }
 
                     } else { // Server is invalid
-                        player.sendMessage(Utils.formatString(langSend.getServer_does_not_exist(), args[2]));
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getServer_does_not_exist().getTo())));
                     }
 
 
                 } else { // Send to player
+                    builder.addPlaceholder("optional_to_name", args[2]);
                     Optional<Player> destPlayer = LightningUtils.getProxy().getPlayer(args[2]);
 
                     if (destPlayer.isPresent()) { // Check if player exists
                         // Server to player
-                        player.sendMessage(Utils.formatString(langSend.getSuccess_executor(), args[1], args[2]));
+                        builder.addPlaceholder("to", destPlayer.get());
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getSuccesses().getServer_to_player())));
                         for (Player p : sourceServer.get().getPlayersConnected()) {
                             p.createConnectionRequest(destPlayer.get().getCurrentServer().get().getServer()).fireAndForget();
-                            p.sendMessage(Utils.formatString(langSend.getWarning_player(), args[2], player.getUsername()));
+                            builder.addPlaceholder("receiver", p);
+                            p.sendMessage(Utils.formatString(builder.fill(langSend.getWarnings().getServer_to_player())));
                         }
 
                     } else { // Player is invalid
-                        player.sendMessage(Utils.formatString(langSend.getPlayer_offline(), args[2]));
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getPlayer_offline().getTo())));
                     }
                 }
 
             } else { // Server is invalid
-                player.sendMessage(Utils.formatString(langSend.getServer_does_not_exist(), args[1]));
+                player.sendMessage(Utils.formatString(builder.fill(langSend.getServer_does_not_exist().getFrom())));
             }
 
 
 
 
         } else { // Send a player
+            builder.addPlaceholder("optional_from_name", args[1]);
             Optional<Player> sourcePlayer = LightningUtils.getProxy().getPlayer(args[1]);
 
             if (sourcePlayer.isPresent()) { // Check if player exists
+                builder.addPlaceholder("from", sourcePlayer.get());
                 if (args[2].startsWith("+")) { // Send to server
+                    builder.addPlaceholder("optional_to_name", args[2].substring(1));
                     Optional<RegisteredServer> destServer = LightningUtils.getProxy().getServer(args[2].substring(1));
 
                     if (destServer.isPresent()) { // Check if server exists
                         // Player to server
-                        player.sendMessage(Utils.formatString(langSend.getSuccess_executor(), args[1], args[2]));
+                        builder.addPlaceholder("to", destServer.get());
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getSuccesses().getPlayer_to_server())));
                         sourcePlayer.get().createConnectionRequest(destServer.get()).fireAndForget();
-                        sourcePlayer.get().sendMessage(Utils.formatString(langSend.getWarning_player(), args[2], player.getUsername()));
+                        builder.addPlaceholder("receiver", sourcePlayer.get());
+                        sourcePlayer.get().sendMessage(Utils.formatString(builder.fill(langSend.getWarnings().getPlayer_to_server())));
 
                     } else { // Server is invalid
-                        player.sendMessage(Utils.formatString(langSend.getServer_does_not_exist(), args[2]));
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getServer_does_not_exist().getTo())));
                     }
 
 
                 } else { // Send to player
+                    builder.addPlaceholder("optional_to_name", args[2]);
                     Optional<Player> destPlayer = LightningUtils.getProxy().getPlayer(args[2]);
 
                     if (destPlayer.isPresent()) { // Check if player exists
                         // Player to player
+                        builder.addPlaceholder("to", destPlayer.get());
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getSuccesses().getPlayer_to_player())));
                         sourcePlayer.get().createConnectionRequest(destPlayer.get().getCurrentServer().get().getServer()).fireAndForget();
-                        player.sendMessage(Utils.formatString(langSend.getSuccess_executor(), args[1], args[2]));
+                        builder.addPlaceholder("receiver", sourcePlayer.get());
+                        sourcePlayer.get().sendMessage(Utils.formatString(builder.fill(langSend.getWarnings().getPlayer_to_player())));
 
                     } else { // Player is invalid
-                        player.sendMessage(Utils.formatString(langSend.getPlayer_offline(), args[2]));
+                        player.sendMessage(Utils.formatString(builder.fill(langSend.getPlayer_offline().getTo())));
                     }
                 }
 
             } else { // Player is invalid
-                player.sendMessage(Utils.formatString(langSend.getPlayer_offline(), args[1]));
+                player.sendMessage(Utils.formatString(builder.fill(langSend.getPlayer_offline().getFrom())));
             }
         }
         return 1; // indicates success
     }
 
     private int executeError(CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Utils.formatString(langSend.getArguments().getInvalid_syntax()));
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource());
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langSend.getArguments().getInvalid_syntax())));
         return 1; // indicates success
     }
 }

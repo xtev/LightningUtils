@@ -8,9 +8,11 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
+import net.kyori.adventure.text.Component;
 
 public class AlertCommand {
     LangConfig.Commands.Alert langAlert = LightningUtils.getLangConfig().getCommands().getAlert();
@@ -35,13 +37,20 @@ public class AlertCommand {
     private int execute(CommandContext<CommandSource> context) {
         String message = StringArgumentType.getString(context, langAlert.getArguments().getMessage());
         for (Player player : LightningUtils.getProxy().getAllPlayers()) {
-            player.sendMessage(Utils.formatString(langAlert.getMessage(), message));
+            Placeholder.Builder builder = Placeholder.builder()
+                .addPlaceholder("receiver", player);
+            if (context.getSource() instanceof Player) builder.addPlaceholder("executor", (Player) context.getSource());
+
+            // use .replace() to make placeholders fill in the message
+            player.sendMessage(Utils.formatString(builder.fill(langAlert.getMessage().replace("{message}", message))));
         }
         return 1; // indicates success
     }
 
     private int executeError(CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Utils.formatString(langAlert.getArguments().getInvalid_syntax()));
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource());
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langAlert.getArguments().getInvalid_syntax())));
         return 1; // indicates success
     }
 }

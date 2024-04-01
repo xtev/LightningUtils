@@ -7,37 +7,112 @@
 # For color formatting please follow the following documentation:
 # https://docs.advntr.dev/minimessage/format.html
 
+# Small briefing about placeholder usage (turned out to be a bit long but it's worth it to skim through):
+# Types                Description       Example Result
+# - player             - Player object   - Player{name=Notch, uuid=069a79f4-44e9-4726-a5be-fca90e38aaf5}
+#   - name             - Player name     - LightningReflex
+#   - uuid             - Player UUID     - dd6d2ec6-ecf2-4884-aa44-f0f279137ffa
+#   - ip               - Player IP       - 127.0.0.1
+#   - address          - Player IP       - 127.0.0.1
+#   - ping             - Player ping     - 10
+#   - protocol_version - Player protocol - 765
+#   - version          - Player version  - 1.20.4
+#   - server           - Player server   - lobby (of type server)
+#
+# - server             - Server object   - Server{name=lobby, players=25}
+#   - name             - Server name     - lobby
+#   - ip               - Server IP       - 127.0.0.1
+#   - address          - Server IP       - 127.0.0.1
+#   - port             - Server port     - 25565
+#   - players          - Server players  - 25
+#
+# - proxy              - Proxy object    - Proxy{name=proxy, players=100, servers=5}
+#   - name             - Proxy name      - proxy
+#   - ip               - Bound IP        - 127.0.0.1
+#   - address          - Bound IP        - 127.0.0.1
+#   - port             - Bound port      - 25565
+#   - players          - Proxy players   - 100
+#   - servers          - Proxy servers   - 5
+#
+# Several examples for if a player was referenced using "player", and another player was referenced using "target", and a gens server was referenced using "server"
+# Placeholder                 - Example Result
+# {player:name}               - LightningReflex
+# {player:ip}                 - 127.0.0.1
+# {player:server:players}     - 10
+# {player:server:name}        - survival
+#
+# {target:server:players}     - 25
+# {target:server:name}        - lobby
+#
+# {proxy:players}             - 100
+#
+# {server:players}            - 25
+# {server:name}               - lobby
+# {server:ip}                 - 127.0.0.1
+
+
 commands:
   send:
-    success_executor: '<green>✔</green> <gray>Successfully sent <gold>%1$s</gold> to <gold>%2$s</gold>.</gray>'
-    warning_player: '<gold>⚠</gold> <gray>You have been sent to <gold>%1$s</gold> by <gold>%2$s</gold>.</gray>'
-    server_does_not_exist: '<red>✖</red> <gray>The server <gold>%1$s</gold> does not exist.</gray>'
-    player_offline: '<red>✖</red> <gray>The player <gold>%1$s</gold> is not online.</gray>'
+    # Placeholder            Type             Description
+    # - executor             - Player         - The player executing the command
+    # - receiver             - Player         - The player receiving the message (if not sent to the executor (all warnings))
+    # - from                 - Player/Server  - The player or server being sent from
+    # - to                   - Player/Server  - The player or server being sent to
+    # - optional_from_name   - String         - The name of the player or server being sent from
+    # - optional_to_name     - String         - The name of the player or server being sent to
+    successes:
+      player_to_server: '<green>✔</green> <gray>Successfully sent <gold>{from:name}</gold> to <gold>+{to:name}</gold>.</gray>'
+      player_to_player: '<green>✔</green> <gray>Successfully sent <gold>{from:name}</gold> to <gold>{to:name}''s server</gold>.</gray>'
+      server_to_server: '<green>✔</green> <gray>Successfully sent <gold>+{from:name}</gold> to <gold>+{to:name}</gold>.</gray>'
+      server_to_player: '<green>✔</green> <gray>Successfully sent <gold>+{from:name}</gold> to <gold>{to:name}''s server</gold>.</gray>'
+    warnings:
+      player_to_server: '<gold>⚠</gold> <gray>You have been sent to <gold>+{to:name}</gold> by <gold>{executor:name}</gold>.</gray>'
+      player_to_player: '<gold>⚠</gold> <gray>You have been sent to <gold>{to:name}''s server</gold> by <gold>{executor:name}</gold>.</gray>'
+      server_to_server: '<gold>⚠</gold> <gray>You have been sent to <gold>+{to:name}</gold> by <gold>{executor:name}</gold>.</gray>'
+      server_to_player: '<gold>⚠</gold> <gray>You have been sent to <gold>{to:name}''s server</gold> by <gold>{executor:name}</gold>.</gray>'
+    server_does_not_exist:
+      from: '<red>✖</red> <gray>The server <gold>{optional_from_name}</gold> does not exist.</gray>'
+      to: '<red>✖</red> <gray>The server <gold>{optional_to_name}</gold> does not exist.</gray>'
+    player_offline:
+      from: '<red>✖</red> <gray>The player <gold>{optional_from_name}</gold> is not online.</gray>'
+      to: '<red>✖</red> <gray>The player <gold>{optional_to_name}</gold> is not online.</gray>'
     arguments:
       from: 'from'
       to: 'to'
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/send <from> <to></gold></gray>'
 
   alert:
-    message: '<gold>⚠</gold> <gray>%1$s</gray>'
+    # Placeholder          Type        Description
+    # - message            - String    - The message the player sent
+    # - executor           - Player    - The player executing the command (only available if executor is a player)
+    # - receiver           - Player    - The player receiving the message
+    #
+    # Placeholders such as "executor" and "receiver" are also available in the message field through in game.
+    # So you can for example run "/alert Hello, {receiver:name}!" and it will replace {receiver:name} with the receiver's name.
+    message: '<gold>⚠</gold> <gray>{message}</gray>'
     arguments:
       message: 'message'
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/alert <message></gold></gray>'
 
   lobby:
-    already_in_lobby: '<red>✖</red> <gray>You are already in <gold>%1$s</gold>.</gray>'
-    success: '<green><bold>✔</bold></green> <gray>You have been sent to <gold>%1$s</gold>.</gray>'
-    server_does_not_exist: '<red>✖</red> <gray>The server <gold>%1$s</gold> does not exist.</gray>'
-    is_not_lobby: '<red>✖</red> <gray>The server <gold>%1$s</gold> is not a lobby.</gray>'
+    # Placeholder          Type        Description
+    # - executor           - Player    - The player executing the command
+    # - server             - Server    - The server the player is being sent to (if available)
+    # - optionalServerName - String    - The name of the server the player is being sent to
+    already_in_lobby: '<red>✖</red> <gray>You are already in <gold>{executor:server:name}</gold>.</gray>'
+    success: '<green><bold>✔</bold></green> <gray>You have been sent to <gold>{server:name}</gold>.</gray>'
+    server_does_not_exist: '<red>✖</red> <gray>The server <gold>{optionalServerName}</gold> does not exist.</gray>'
+    is_not_lobby: '<red>✖</red> <gray>The server <gold>{server:name}</gold> is not a lobby.</gray>'
     arguments:
       server: 'server'
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/lobby <server></gold></gray>'
 
   staffchat:
-    # {server} - The server the player is on
-    # {player} - The player's name
-    # {message} - The message the player sent
-    message: '<red><bold>S</bold></red> <dark_gray>[<gray>{server}</gray>]</dark_gray> <aqua><click:run_command:/server {server}><hover:show_text:"<gray>Click to connect to <gold>{server}</gold>.</gray>">{player}</hover></click></aqua> <dark_gray>:</dark_gray> <white>{message}</white>'
+    # Placeholder       Type        Description
+    # - executor        - Player    - The player executing the command/sending the message
+    # - receiver        - Player    - The player receiving the message
+    # - message         - String    - The message the player sent
+    message: '<red><bold>S</bold></red> <dark_gray>[<gray>{executor:server:name}</gray>]</dark_gray> <aqua><click:run_command:/server {executor:server:name}><hover:show_text:"<gray>Click to connect to <gold>{executor:server:name}</gold>.</gray>">{executor:player:name}</hover></click></aqua> <dark_gray>:</dark_gray> <white>{message}</white>'
     toggle_disabled: '<red>✖</red> <gray>Staff chat toggling is <gold>disabled<gold> in the config.</gray>'
     enabled: '<green>✔</green> <gray>Staff chat has been <gold>enabled</gold>.</gray>'
     disabled: '<red>✖</red> <gray>Staff chat has been <gold>disabled</gold>.</gray>'
@@ -46,27 +121,41 @@ commands:
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/staffchat <message></gold></gray>'
 
   sudo:
-    success: '<green>✔</green> <gray>You have made <gold>%1$s</gold> execute <gold>%2$s</gold>.</gray>'
-    player_not_found: '<red>✖</red> <gray>The player <gold>%1$s</gold> is not online.</gray>'
-    notify: '<gold>⚠</gold> <gray><gold>%1$s</gold> forced you to execute <gold>%2$s</gold>.</gray>'
+    # Placeholder          Type        Description
+    # - executor           - Player    - The player executing the command
+    # - target             - Player    - The player being sudo'd
+    # - command            - String    - The command the target will execute
+    # - optionalTargetName - String    - The name of the player being sudo'd
+    success: '<green>✔</green> <gray>You have made <gold>{target:name}</gold> execute <gold>{command}</gold>.</gray>'
+    player_not_found: '<red>✖</red> <gray>The player <gold>{optionalTargetName}</gold> is not online.</gray>'
+    notify: '<gold>⚠</gold> <gray><gold>{executor:name}</gold> forced you to execute <gold>{command}</gold>.</gray>'
     arguments:
       player: 'player'
       text: 'text'
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/sudo <player> <command or message></gold></gray>'
 
   find:
-    success: '<green>✔</green> <click:run_command:/server %2$s><hover:show_text:"<gray>Click to connect to <gold>%2$s</gold>.</gray>"><gold>%1$s</gold> <gray>is on server <gold>%2$s</gold>.</gray></hover></click>'
-    player_not_found: '<red>✖</red> <gray>The player <gold>%1$s</gold> is not online.</gray>'
+    # Placeholder          Type        Description
+    # - executor           - Player    - The player executing the command
+    # - target             - Player    - The player being found
+    # - optionalTargetName - String    - The name of the player being found
+    success: '<green>✔</green> <click:run_command:/server {target:server:name}><hover:show_text:"<gray>Click to connect to <gold>{target:server:name}</gold>.</gray>"><gold>{target:name}</gold> <gray>is on server <gold>{target:server:name}</gold>.</gray></hover></click>'
+    player_not_found: '<red>✖</red> <gray>The player <gold>{optionalTargetName}</gold> is not online.</gray>'
     arguments:
       player: 'player'
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/find <player></gold></gray>'
 
   ip:
-    success: "<green>✔</green> <gold>%1$s's</gold> <gray>IP is <gold>%2$s</gold>.</gray>"
-    player_not_found: '<red>✖</red> <gray>The player <gold>%1$s</gold> is not online.</gray>'
+    # Placeholder          Type        Description
+    # - executor           - Player    - The player executing the command
+    # - target             - Player    - The player being found
+    # - optionalTargetName - String    - The name of the player's IP being obtained
+    success: '<green>✔</green> <gray><gold>{target:name}''s IP</gold> is <gold>{target:ip}</gold>.</gray>'
+    player_not_found: '<red>✖</red> <gray>The player <gold>{optionalTargetName}</gold> is not online.</gray>'
     arguments:
       player: 'player'
       invalid_syntax: '<red>✖</red> <gray>Invalid syntax! <gold>/ip <player></gold></gray>'
 
 
-lang_version: 1.0
+# Do not change this value unless you know what you are doing
+lang_version: 1.1

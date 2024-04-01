@@ -8,6 +8,7 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
@@ -40,6 +41,9 @@ public class StaffChatCommand {
 //        String message = StringArgumentType.getString(context, langStaff.getArguments().getMessage());
         String message = context.getInput().substring(context.getInput().indexOf(" ") + 1);
 
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource());
+
         if (args.length > 1) {
             sendStaffMessage(player, message);
             return 1;
@@ -49,30 +53,37 @@ public class StaffChatCommand {
         if (configStaffChat.isAllow_toggle()) {
             if (PlayerCache.getToggledStaffChat().contains(player.getUniqueId())) {
                 PlayerCache.getToggledStaffChat().remove(player.getUniqueId());
-                player.sendMessage(Utils.formatString(langStaff.getDisabled()));
+                player.sendMessage(Utils.formatString(builder.fill(langStaff.getDisabled())));
             } else {
                 PlayerCache.getToggledStaffChat().add(player.getUniqueId());
-                player.sendMessage(Utils.formatString(langStaff.getEnabled()));
+                player.sendMessage(Utils.formatString(builder.fill(langStaff.getEnabled())));
             }
             return 1;
         }
 
         // toggling is disabled
-        player.sendMessage(Utils.formatString(langStaff.getToggle_disabled()));
+        player.sendMessage(Utils.formatString(builder.fill(langStaff.getToggle_disabled())));
 
         return 1; // indicates success
     }
 
-    public static void sendStaffMessage(Player player, String message) {
+    public static void sendStaffMessage(Player player, String message) { // extract to separate staffchat util method when implementing redis support
         for (Player staff : LightningUtils.getProxy().getAllPlayers()) {
             if (Utils.hasPermission(staff, commands.getStaffchat().getPermission())) {
 //                staff.sendMessage(Utils.formatString(langStaff.getMessage(), message));
                 // Filter minimessage by removing < and > cause I'm lazy and yeah
-                String formattedMessage = langStaff.getMessage()
-                    .replace("{server}", player.getCurrentServer().get().getServerInfo().getName())
-                    .replace("{player}", player.getUsername())
-                    .replace("{message}", message.replaceAll("<", "").replaceAll(">", ""));
-                staff.sendMessage(Utils.formatString(formattedMessage));
+//                String formattedMessage = langStaff.getMessage()
+//                    .replace("{server}", player.getCurrentServer().get().getServerInfo().getName())
+//                    .replace("{player}", player.getUsername())
+//                    .replace("{message}", message.replaceAll("<", "").replaceAll(">", ""));
+//                staff.sendMessage(Utils.formatString(formattedMessage));
+                Placeholder.Builder builder = Placeholder.builder()
+                    .addPlaceholder("executor", player)
+                    .addPlaceholder("receiver", staff)
+                    .addPlaceholder("message", message);
+//                staff.sendMessage(Utils.formatString(builder.fill(langStaff.getMessage())));
+                // swapping formatString and fill to prevent minimessage injection
+                staff.sendMessage(builder.fill(Utils.formatString(langStaff.getMessage())));
             }
         }
     }

@@ -8,6 +8,7 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
@@ -44,17 +45,25 @@ public class IpCommand {
     private int execute(CommandContext<CommandSource> context) {
         String playerName = StringArgumentType.getString(context, langIp.getArguments().getPlayer());
         Optional<Player> optionalPlayer = LightningUtils.getProxy().getPlayer(playerName);
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource())
+            .addPlaceholder("optionalTargetName", playerName);
         if (optionalPlayer.isEmpty()) {
-            context.getSource().sendMessage(Utils.formatString(langIp.getPlayer_not_found(), playerName));
+//            context.getSource().sendMessage(Utils.formatString(langIp.getPlayer_not_found(), playerName));
+            context.getSource().sendMessage(Utils.formatString(builder.fill(langIp.getPlayer_not_found())));
             return 1;
         }
         Player argumentPlayer = optionalPlayer.get();
-        context.getSource().sendMessage(Utils.formatString(langIp.getSuccess(), playerName, argumentPlayer.getRemoteAddress().getAddress().getHostAddress()));
+        builder.addPlaceholder("target", argumentPlayer);
+//        context.getSource().sendMessage(Utils.formatString(langIp.getSuccess(), playerName, argumentPlayer.getRemoteAddress().getAddress().getHostAddress()));
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langIp.getSuccess())));
         return 1; // indicates success
     }
 
     private int executeError(CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Utils.formatString(langIp.getArguments().getInvalid_syntax()));
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource());
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langIp.getArguments().getInvalid_syntax())));
         return 1; // indicates success
     }
 }

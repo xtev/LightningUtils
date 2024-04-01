@@ -9,6 +9,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import me.lightningreflex.lightningutils.LightningUtils;
+import me.lightningreflex.lightningutils.utils.Placeholder;
 import me.lightningreflex.lightningutils.utils.Utils;
 import me.lightningreflex.lightningutils.configurations.impl.LangConfig;
 import me.lightningreflex.lightningutils.configurations.impl.MainConfig;
@@ -51,12 +52,21 @@ public class SudoCommand {
     private int execute(CommandContext<CommandSource> context) {
         String playerName = StringArgumentType.getString(context, langSudo.getArguments().getPlayer());
         Optional<Player> optionalPlayer = LightningUtils.getProxy().getPlayer(playerName);
+
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource())// oohhh perhaps in the future I can make it
+            // so I can supply a source, and it will automatically fill in the placeholders depending on if it's a player or console
+            .addPlaceholder("optionalTargetName", playerName);
+
         if (optionalPlayer.isEmpty()) {
-            context.getSource().sendMessage(Utils.formatString(langSudo.getPlayer_not_found(), playerName));
+//            context.getSource().sendMessage(Utils.formatString(langSudo.getPlayer_not_found(), playerName));
+            context.getSource().sendMessage(Utils.formatString(builder.fill(langSudo.getPlayer_not_found())));
             return 1;
         }
         Player victim = optionalPlayer.get();
+        builder.addPlaceholder("target", victim);
         String text = StringArgumentType.getString(context, langSudo.getArguments().getText());
+        builder.addPlaceholder("command", text);
 
         // cool reflection was useless, spent hours cooking, just to end up cooking water, and ending up with this
         ConnectedPlayer connectedVictim = (ConnectedPlayer) victim;
@@ -64,14 +74,17 @@ public class SudoCommand {
         if (!text.startsWith("/")) text = "/" + text;
         // notify player
         if (mainConfig.getSudo().isNotify())
-            victim.sendMessage(Utils.formatString(langSudo.getNotify(), ((Player) context.getSource()).getUsername(), text));
-        context.getSource().sendMessage(Utils.formatString(langSudo.getSuccess(), playerName, text));
+//            victim.sendMessage(Utils.formatString(langSudo.getNotify(), ((Player) context.getSource()).getUsername(), text));
+            victim.sendMessage(Utils.formatString(builder.fill(langSudo.getNotify())));
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langSudo.getSuccess())));
         connectedVictim.spoofChatInput(text);
         return 1; // indicates success
     }
 
     private int executeError(CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Utils.formatString(langSudo.getArguments().getInvalid_syntax()));
+        Placeholder.Builder builder = Placeholder.builder()
+            .addPlaceholder("executor", (Player) context.getSource());
+        context.getSource().sendMessage(Utils.formatString(builder.fill(langSudo.getArguments().getInvalid_syntax())));
         return 1; // indicates success
     }
 }

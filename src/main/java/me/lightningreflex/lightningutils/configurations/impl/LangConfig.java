@@ -14,6 +14,7 @@ import java.nio.file.Path;
 
 @Getter
 public class LangConfig extends Config {
+    // The config classes are horrible, someone please improve it :(
     //------------------------------------------------
     public Commands commands;
     @Getter
@@ -21,10 +22,36 @@ public class LangConfig extends Config {
         public Send send;
         @Getter
         public static class Send {
-            public String success_executor;
-            public String warning_player;
-            public String server_does_not_exist;
-            public String player_offline;
+//            public String success_executor;
+//            public String warning_player;
+            public Successes successes;
+            @Getter
+            public static class Successes {
+                public String player_to_server;
+                public String player_to_player;
+                public String server_to_server;
+                public String server_to_player;
+            }
+            public Warnings warnings;
+            @Getter
+            public static class Warnings {
+                public String player_to_server;
+                public String player_to_player;
+                public String server_to_server;
+                public String server_to_player;
+            }
+            public Server_Does_Not_Exist server_does_not_exist;
+            @Getter
+            public static class Server_Does_Not_Exist {
+                public String from;
+                public String to;
+            }
+            public Player_Offline player_offline;
+            @Getter
+            public static class Player_Offline {
+                public String from;
+                public String to;
+            }
 
             public Arguments arguments;
             @Getter
@@ -144,6 +171,7 @@ public class LangConfig extends Config {
 
         // Load from file
         try {
+            versionValidate(new FileInputStream(configPath.toFile()), path);
             InputStream inputStream = new FileInputStream(configPath.toFile());
             //            yaml.load(inputStream);
             LangConfig config = new Yaml(new Constructor(LangConfig.class, new LoaderOptions())).load(inputStream);
@@ -159,22 +187,57 @@ public class LangConfig extends Config {
 
     public LangConfig validate(final String path, LangConfig currentConfig) {
         // move lang.yml to lang-version.yml and create new lang.yml
-        if (currentConfig.getLang_version() != 1.0) {
+//        if (currentConfig.getLang_version() != 1.1) {
+//            // move
+//            Path dataPath = LightningUtils.getDataDirectory();
+//            Path configPath = dataPath.resolve(path);
+//            // remove end from . and add -version.yml
+//            String oldExtension = configPath.toString().substring(configPath.toString().lastIndexOf("."));
+//            String newExtension = "-" + currentConfig.getLang_version() + ".yml";
+//            Path oldConfigPath = dataPath.resolve(path.replace(oldExtension, newExtension));
+//            // error
+//            LightningUtils.getLogger().error("Invalid yml version, moving previous yml file to " + oldConfigPath.getFileName() + " and creating new " + configPath.getFileName());
+//            // move
+//            configPath.toFile().renameTo(oldConfigPath.toFile());
+//            // create new
+//            return load(path);
+//        }
+        return currentConfig;
+    }
+
+    public void versionValidate(InputStream inputStream, String path) {
+        // get the last line of the file
+        StringBuilder lastLine = new StringBuilder();
+        try {
+            while (inputStream.available() > 0) {
+                char c = (char) inputStream.read();
+                if (c == '\n') {
+                    lastLine = new StringBuilder();
+                } else {
+                    lastLine.append(c);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // split at ": " and get the second part and parse to double
+        double version = Double.parseDouble(lastLine.toString().split(": ")[1]);
+
+        // replace file
+        if (version != 1.1) {
             // move
             Path dataPath = LightningUtils.getDataDirectory();
             Path configPath = dataPath.resolve(path);
             // remove end from . and add -version.yml
             String oldExtension = configPath.toString().substring(configPath.toString().lastIndexOf("."));
-            String newExtension = "-" + currentConfig.getLang_version() + ".yml";
+            String newExtension = "-" + version + ".yml";
             Path oldConfigPath = dataPath.resolve(path.replace(oldExtension, newExtension));
             // error
             LightningUtils.getLogger().error("Invalid yml version, moving previous yml file to " + oldConfigPath.getFileName() + " and creating new " + configPath.getFileName());
-            // use correct names
             // move
             configPath.toFile().renameTo(oldConfigPath.toFile());
             // create new
-            return load(path);
+            Utils.ExportResource(path, configPath.toString().substring(configPath.toString().indexOf("/") + 1));
         }
-        return currentConfig;
     }
 }
