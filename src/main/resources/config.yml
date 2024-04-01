@@ -130,4 +130,6 @@ clearchat:
   # the player joins.
   network_join: false
 
+
+# Do not change this value unless you know what you are doing
 config_version: 1.1
